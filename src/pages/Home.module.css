@@ -1,0 +1,226 @@
+.container {
+  min-height: 100vh;
+  background-color: #fafafa;
+}
+
+.nav {
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.navContent {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 4rem;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: -0.025em;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userName {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.logoutButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  background-color: #111;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutButton:hover {
+  background-color: #333;
+  transform: translateY(-1px);
+}
+
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.filterSection {
+  margin-bottom: 2rem;
+}
+
+.filterTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.tagList {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tagButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tagButton:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.tagButton.active {
+  background: #111;
+  color: white;
+  border-color: #111;
+}
+
+.channelList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.channelCard {
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #eee;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.channelCard:hover {
+  border-color: #ddd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.channelHeader {
+  padding: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.channelInfo {
+  flex: 1;
+}
+
+.channelTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 0.5rem;
+}
+
+.channelTags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  background: #f5f5f5;
+  border-radius: 1rem;
+  color: #666;
+}
+
+.channelContent {
+  padding: 0 1.5rem 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.channelDescription {
+  color: #666;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.joinButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  background-color: #111;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.joinButton:hover {
+  background-color: #333;
+  transform: translateY(-1px);
+}
+
+.filterGroup {
+  margin-bottom: 1.5rem;
+}
+
+.filterGroup:last-child {
+  margin-bottom: 0;
+}
+
+.channelMeta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.discussionType {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-weight: 500;
+}
+
+.typeTag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.moderated {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.freetalk {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.queuebased {
+  background-color: #d1fae5;
+  color: #065f46;
+}
