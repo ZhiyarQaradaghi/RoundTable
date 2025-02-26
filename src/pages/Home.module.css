@@ -224,3 +224,21 @@
   background-color: #d1fae5;
   color: #065f46;
 }
+
+.discussionSection {
+  margin-top: 1.5rem;
+}
+
+.filterWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.discussionSection > :global(.CreateDiscussion_createButton__hash) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateY(-50%);
+}

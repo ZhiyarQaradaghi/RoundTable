@@ -1,0 +1,21 @@
+.container {
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding: 2rem 1.5rem;
+}
+
+.content {
+  max-width: 768px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 2rem;
+}

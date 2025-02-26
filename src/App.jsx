@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CreateDiscussionPage from "./pages/CreateDiscussion/CreateDiscussionPage";
 import "./index.css";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/create-discussion" element={<CreateDiscussionPage />} />
       </Routes>
     </BrowserRouter>
   );

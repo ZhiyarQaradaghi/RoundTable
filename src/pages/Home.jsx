@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import Navigation from "../components/Navigation/Navigation";
+import Filters from "../components/Filters/Filters";
+import DiscussionList from "../components/DiscussionList/DiscussionList";
 import styles from "./Home.module.css";
 
 const TAGS = [
@@ -23,6 +25,7 @@ const CHANNELS = [
     description:
       "Discussion about current global economic trends, market analysis, and financial policies. Moderated discussions ensure focused and productive conversations.",
     participants: 234,
+    creator: "Sarah Chen",
   },
   {
     id: 2,
@@ -32,6 +35,7 @@ const CHANNELS = [
     description:
       "Share and discuss game development techniques, industry news, and upcoming releases. Open discussion format welcomes all perspectives.",
     participants: 567,
+    creator: "Alex Martinez",
   },
   {
     id: 3,
@@ -41,6 +45,7 @@ const CHANNELS = [
     description:
       "Explore the latest technological innovations, AI developments, and future tech trends. Queue-based discussions for organized participation.",
     participants: 789,
+    creator: "David Kim",
   },
   {
     id: 4,
@@ -50,6 +55,7 @@ const CHANNELS = [
     description:
       "Open discussions about current political events, policies, and global affairs. Moderated for civil and constructive dialogue.",
     participants: 432,
+    creator: "Emma Wilson",
   },
   {
     id: 5,
@@ -59,134 +65,56 @@ const CHANNELS = [
     description:
       "A relaxed space to discuss your favorite games, share gaming moments, and connect with fellow gamers.",
     participants: 321,
+    creator: "Marcus Johnson",
   },
 ];
 
 function Home() {
-  const navigate = useNavigate();
   const [selectedTag, setSelectedTag] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [expandedChannel, setExpandedChannel] = useState(null);
-  const userName = "John Doe"; // This should come from your auth state
+  const [searchQuery, setSearchQuery] = useState("");
+  const userName = "John Doe";
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    navigate("/login");
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
+  const handleCreateDiscussion = () => {
+    // Implement create discussion logic
+    console.log("Create discussion clicked");
   };
 
   const filteredChannels = CHANNELS.filter((channel) => {
     const matchesTag =
       selectedTag === "All" || channel.tags.includes(selectedTag);
     const matchesType = selectedType === "All" || channel.type === selectedType;
-    return matchesTag && matchesType;
+    const matchesSearch =
+      channel.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      channel.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTag && matchesType && matchesSearch;
   });
-
-  const toggleChannel = (channelId) => {
-    setExpandedChannel(expandedChannel === channelId ? null : channelId);
-  };
-
-  const getTypeClassName = (type) => {
-    const baseClass = styles.typeTag;
-    const typeClass = type.toLowerCase().replace(/\s+/g, "");
-    return `${baseClass} ${styles[typeClass]}`;
-  };
 
   return (
     <div className={styles.container}>
-      <nav className={styles.nav}>
-        <div className={styles.navContent}>
-          <span className={styles.logo}>RoundTable</span>
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>Welcome, {userName}</span>
-            <button onClick={handleLogout} className={styles.logoutButton}>
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
-
+      <Navigation userName={userName} onSearch={handleSearch} />
       <main className={styles.main}>
-        <div className={styles.filterSection}>
-          <div className={styles.filterGroup}>
-            <h2 className={styles.filterTitle}>Filter by topic</h2>
-            <div className={styles.tagList}>
-              {TAGS.map((tag) => (
-                <button
-                  key={tag}
-                  className={`${styles.tagButton} ${
-                    selectedTag === tag ? styles.active : ""
-                  }`}
-                  onClick={() => setSelectedTag(tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <h2 className={styles.filterTitle}>Discussion Type</h2>
-            <div className={styles.tagList}>
-              <button
-                className={`${styles.tagButton} ${
-                  selectedType === "All" ? styles.active : ""
-                }`}
-                onClick={() => setSelectedType("All")}
-              >
-                All Types
-              </button>
-              {DISCUSSION_TYPES.map((type) => (
-                <button
-                  key={type}
-                  className={`${styles.tagButton} ${
-                    selectedType === type ? styles.active : ""
-                  }`}
-                  onClick={() => setSelectedType(type)}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.channelList}>
-          {filteredChannels.map((channel) => (
-            <div key={channel.id} className={styles.channelCard}>
-              <div
-                className={styles.channelHeader}
-                onClick={() => toggleChannel(channel.id)}
-              >
-                <div className={styles.channelInfo}>
-                  <h3 className={styles.channelTitle}>{channel.title}</h3>
-                  <div className={styles.channelMeta}>
-                    <div className={styles.channelTags}>
-                      {channel.tags.map((tag) => (
-                        <span key={tag} className={styles.tag}>
-                          {tag}
-                        </span>
-                      ))}
-                      <span className={getTypeClassName(channel.type)}>
-                        {channel.type}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {expandedChannel === channel.id && (
-                <div className={styles.channelContent}>
-                  <p className={styles.channelDescription}>
-                    {channel.description}
-                  </p>
-                  <button className={styles.joinButton}>
-                    Join Discussion ({channel.participants})
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <Filters
+          tags={TAGS}
+          discussionTypes={DISCUSSION_TYPES}
+          selectedTag={selectedTag}
+          selectedType={selectedType}
+          onTagSelect={setSelectedTag}
+          onTypeSelect={setSelectedType}
+          onCreateDiscussion={handleCreateDiscussion}
+        />
+        <DiscussionList
+          channels={filteredChannels}
+          expandedChannel={expandedChannel}
+          onToggleChannel={(id) =>
+            setExpandedChannel(expandedChannel === id ? null : id)
+          }
+        />
       </main>
     </div>
   );

@@ -1,0 +1,120 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111;
+}
+
+.input,
+.textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.typeButtons,
+.tagButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.typeButton,
+.tagButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 1rem;
+  background: white;
+  font-size: 0.875rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typeButton:hover,
+.tagButton:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.typeButton.active,
+.tagButton.active {
+  background: #111;
+  color: white;
+  border-color: #111;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.submitButton,
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitButton {
+  background-color: #111;
+  color: white;
+  border: none;
+}
+
+.submitButton:hover {
+  background-color: #333;
+  transform: translateY(-1px);
+}
+
+.cancelButton {
+  background-color: white;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.cancelButton:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .buttonGroup {
+    flex-direction: column;
+  }
+}
