@@ -378,6 +378,8 @@ function DiscussionPage() {
           borderRadius: "8px",
           margin: "4px 0",
           position: "relative",
+          display: "flex",
+          alignItems: "center",
         }}
       >
         <ListItemAvatar>
@@ -395,6 +397,18 @@ function DiscussionPage() {
             fontWeight: isSpeaking ? 600 : 400,
           }}
         />
+        {participant._id !== user?._id && (
+          <IconButton
+            size="small"
+            sx={{
+              color: "#b0b3b8",
+              "&:hover": { color: "#ff9800", bgcolor: "transparent" },
+            }}
+            onClick={() => openReportModal(participant, "user")}
+          >
+            <ReportIcon fontSize="small" />
+          </IconButton>
+        )}
       </ListItem>
     );
   };
