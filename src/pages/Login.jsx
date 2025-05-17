@@ -13,12 +13,12 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+    setError("");
     try {
       await login({ email, password });
-      navigate("/");
+      navigate("/home");
     } catch (err) {
-      console.error("Login failed:", err);
+      setError(err.message);
     } finally {
       setIsSubmitting(false);
     }

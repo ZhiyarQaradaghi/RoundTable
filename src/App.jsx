@@ -11,60 +11,64 @@ import NotFound from "./pages/NotFound";
 import DiscussionPage from "./pages/DiscussionPage";
 import { SocketProvider } from "./contexts/SocketContext.jsx";
 import AdminDashboard from "./pages/AdminDashboard";
+import { AdminAuthProvider } from "./context/AdminAuthContext";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import AdminLogin from "./pages/AdminLogin";
 
 function App() {
   return (
     <AuthProvider>
-      <SocketProvider>
-        <Routes>
-          <Route path="/landing" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/discussions/:discussionId/join"
-            element={
-              <ProtectedRoute>
-                <ConfirmJoinDiscussion />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/discussions/:discussionId"
-            element={
-              <ProtectedRoute>
-                <DiscussionPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </SocketProvider>
+      <AdminAuthProvider>
+        <SocketProvider>
+          <Routes>
+            <Route path="/landing" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/discussions/:discussionId/join"
+              element={
+                <ProtectedRoute>
+                  <ConfirmJoinDiscussion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/discussions/:discussionId"
+              element={
+                <ProtectedRoute>
+                  <DiscussionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </SocketProvider>
+      </AdminAuthProvider>
     </AuthProvider>
   );
 }
