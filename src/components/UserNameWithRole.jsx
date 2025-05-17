@@ -1,6 +1,9 @@
 import { Typography, Box } from "@mui/material";
 
 export default function UserNameWithRole({ user }) {
+  if (!user) {
+    return null;
+  }
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
       <Typography component="span">

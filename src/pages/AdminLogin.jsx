@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAdminAuth } from "../context/AdminAuthContext";
 import { Box, Button, TextField, Typography, Paper } from "@mui/material";
 
 export default function AdminLogin() {
@@ -9,21 +9,17 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login } = useAdminAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const data = await login({ email, password });
-      if (data.user && data.user.role === "admin") {
-        navigate("/admin");
-      } else {
-        setError("You are not an admin.");
-      }
+      await login({ email, password });
+      navigate("/admin");
     } catch (err) {
-      setError("Invalid credentials");
+      setError("Invalid admin credentials");
     } finally {
       setLoading(false);
     }
