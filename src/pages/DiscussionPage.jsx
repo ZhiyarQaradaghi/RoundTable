@@ -186,61 +186,53 @@ function DiscussionPage() {
 
   useEffect(() => {
     Object.entries(peers).forEach(([userId, stream]) => {
-      console.log("Setting up audio for peer:", userId, "Stream:", {
-        active: stream.active,
-        tracks: stream.getTracks().map((t) => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          muted: t.muted,
-          readyState: t.readyState,
-        })),
-      });
-
       if (!audioElements.current[userId]) {
-        const audio = document.createElement("audio");
+        const audio = new Audio();
         audio.id = `audio-${userId}`;
-        document.body.appendChild(audio);
 
         audio.srcObject = stream;
         audio.autoplay = true;
         audio.playsInline = true;
+        audio.muted = false;
         audio.volume = 1.0;
 
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log("Audio playing successfully for peer:", userId);
-              const audioTrack = stream.getAudioTracks()[0];
-              if (audioTrack) {
-                audioTrack.enabled = true;
-                console.log("Audio track enabled for peer:", userId);
-              }
-            })
-            .catch((err) => {
-              console.error("Error playing audio:", err);
-              // Try to recover by requesting user interaction
-              const retryPlay = () => {
-                audio.play().catch(console.error);
-                document.removeEventListener("click", retryPlay);
-              };
-              document.addEventListener("click", retryPlay);
-            });
-        }
+        const startAudio = async () => {
+          try {
+            await audio.setSinkId("default");
+            await audio.play();
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+              audioTrack.enabled = true;
+            }
+          } catch (err) {
+            if (
+              err.name === "NotAllowedError" ||
+              err.name === "NotFoundError"
+            ) {
+              document.addEventListener(
+                "touchstart",
+                function playOnTouch() {
+                  audio.play();
+                  document.removeEventListener("touchstart", playOnTouch);
+                },
+                { once: true }
+              );
+            }
+            console.error("Audio playback error:", err.name);
+          }
+        };
 
+        startAudio();
         audioElements.current[userId] = audio;
       }
     });
 
     return () => {
       Object.entries(audioElements.current).forEach(([userId, audio]) => {
-        console.log("Cleaning up audio element for:", userId);
         if (audio.srcObject) {
-          audio.srcObject.getTracks().forEach((track) => {
-            track.stop();
-            console.log("Stopped track for:", userId);
-          });
+          audio.srcObject.getTracks().forEach((track) => track.stop());
         }
+        audio.srcObject = null;
         audio.remove();
         delete audioElements.current[userId];
       });
