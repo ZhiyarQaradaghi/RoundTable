@@ -46,6 +46,8 @@ import ReportIcon from "@mui/icons-material/Report";
 import Navigation from "../components/Navigation/Navigation";
 import { reportUserOrDiscussion } from "../hooks/useReports";
 import UserNameWithRole from "../components/UserNameWithRole";
+import Reactions from "../components/Discussions/Reactions";
+import FloatingReaction from "../components/Discussions/FloatingReaction";
 
 function DiscussionPage() {
   const { discussionId } = useParams();
@@ -72,6 +74,8 @@ function DiscussionPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const [reportError, setReportError] = useState("");
+
+  const [reactions, setReactions] = useState([]);
 
   const scrollToBottom = () => {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -146,6 +150,21 @@ function DiscussionPage() {
           }
           return prevMessages;
         });
+      });
+
+      socket.on("reaction", (type) => {
+        const newReaction = {
+          id: Date.now(),
+          type,
+          position: {
+            x: Math.random() * 60 + 20,
+            y: Math.random() * 40 + 30,
+          },
+        };
+        setReactions((prev) => [...prev, newReaction]);
+        setTimeout(() => {
+          setReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
+        }, 2000);
       });
 
       return () => {
@@ -261,6 +280,24 @@ function DiscussionPage() {
       setReportError("Failed to submit report.");
     } finally {
       setReportLoading(false);
+    }
+  };
+
+  const handleReaction = (type) => {
+    if (socket && discussionId) {
+      socket.emit("reaction", { discussionId, type });
+      const newReaction = {
+        id: Date.now(),
+        type,
+        position: {
+          x: Math.random() * 60 + 20,
+          y: Math.random() * 40 + 30,
+        },
+      };
+      setReactions((prev) => [...prev, newReaction]);
+      setTimeout(() => {
+        setReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
+      }, 2000);
     }
   };
 
@@ -403,31 +440,33 @@ function DiscussionPage() {
                 mb: 4,
               }}
             >
-              <IconButton
-                onClick={handleToggleMic}
-                disabled={isQueueBasedDiscussion && !isMyTurn}
-                sx={{
-                  bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
-                  color: "white",
-                  width: 80,
-                  height: 80,
-                  mb: 2,
-                  "&:hover": {
-                    bgcolor: isMicActive ? "#219150" : "#c0392b",
-                  },
-                  "&.Mui-disabled": {
-                    bgcolor: "action.disabledBackground",
-                  },
-                }}
-              >
-                {isMicActive ? (
-                  <MicIcon sx={{ fontSize: 40 }} />
-                ) : (
-                  <MicOffIcon
-                    sx={{ fontSize: 40, textDecoration: "line-through" }}
-                  />
-                )}
-              </IconButton>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <IconButton
+                  onClick={handleToggleMic}
+                  disabled={isQueueBasedDiscussion && !isMyTurn}
+                  sx={{
+                    bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
+                    color: "white",
+                    width: 80,
+                    height: 80,
+                    mb: 2,
+                    "&:hover": {
+                      bgcolor: isMicActive ? "#219150" : "#c0392b",
+                    },
+                    "&.Mui-disabled": {
+                      bgcolor: "action.disabledBackground",
+                    },
+                  }}
+                >
+                  {isMicActive ? (
+                    <MicIcon sx={{ fontSize: 40 }} />
+                  ) : (
+                    <MicOffIcon
+                      sx={{ fontSize: 40, textDecoration: "line-through" }}
+                    />
+                  )}
+                </IconButton>
+              </Stack>
               <Typography variant="caption" color="text.secondary">
                 {isMicActive ? "Mic On" : "Mic Off"}
                 {isQueueBasedDiscussion && !isMyTurn && " (Not your turn)"}
@@ -744,6 +783,39 @@ function DiscussionPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 1000,
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 1,
+        }}
+      >
+        <Reactions onReact={handleReaction} />
+      </Box>
+
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 1200,
+        }}
+      >
+        {reactions.map((reaction) => (
+          <FloatingReaction
+            key={reaction.id}
+            type={reaction.type}
+            position={reaction.position}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }
