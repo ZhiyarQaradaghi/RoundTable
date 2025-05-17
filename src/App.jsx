@@ -9,7 +9,7 @@ import ProfilePage from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import DiscussionPage from "./pages/DiscussionPage";
-import { SocketProvider } from "./contexts/SocketContext.jsx";
+import { SocketProvider } from "./context/SocketContext.jsx";
 import AdminDashboard from "./pages/AdminDashboard";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";

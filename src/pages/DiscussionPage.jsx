@@ -6,7 +6,8 @@ import {
   fetchChatMessagesForDiscussion,
   sendChatMessageForDiscussion,
 } from "../hooks/useDiscussions";
-import { useSocket } from "../contexts/SocketContext.jsx";
+import { useSocket } from "../context/SocketContext.jsx";
+import { useVoiceChat } from "../hooks/useVoiceChat";
 import {
   Box,
   Container,
@@ -56,6 +57,10 @@ function DiscussionPage() {
   const { currentDiscussion, fetchDiscussionById, leaveDiscussion } =
     useDiscussionFilters();
   const { socket } = useSocket();
+  const { startVoiceChat, stopVoiceChat, peers } = useVoiceChat(
+    socket,
+    discussionId
+  );
   const [isMicActive, setIsMicActive] = useState(false);
   const [speakingQueue, setSpeakingQueue] = useState([]);
   const [participants, setParticipants] = useState([]);
@@ -76,6 +81,8 @@ function DiscussionPage() {
   const [reportError, setReportError] = useState("");
 
   const [reactions, setReactions] = useState([]);
+
+  const audioElements = useRef({});
 
   const scrollToBottom = () => {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -177,6 +184,35 @@ function DiscussionPage() {
     }
   }, [socket, discussionId]);
 
+  useEffect(() => {
+    Object.entries(peers).forEach(([userId, stream]) => {
+      console.log("Setting up audio for peer:", userId);
+      if (!audioElements.current[userId]) {
+        const audio = new Audio();
+        audio.srcObject = stream;
+        audio.autoplay = true;
+
+        audio.onplay = () =>
+          console.log("Audio started playing for peer:", userId);
+        audio.onpause = () => console.log("Audio paused for peer:", userId);
+        audio.onerror = (e) =>
+          console.error("Audio error for peer:", userId, e);
+
+        audioElements.current[userId] = audio;
+        console.log("Audio element created:", audio.srcObject?.active);
+      }
+    });
+
+    return () => {
+      Object.entries(audioElements.current).forEach(([userId, audio]) => {
+        console.log("Cleaning up audio for peer:", userId);
+        audio.srcObject = null;
+        audio.remove();
+      });
+      audioElements.current = {};
+    };
+  }, [peers]);
+
   const isFreeTalkType = currentDiscussion?.type?.toLowerCase() === "free talk";
   const isQueueBasedDiscussion = !isFreeTalkType;
 
@@ -191,15 +227,17 @@ function DiscussionPage() {
     }
   }, [isQueueBasedDiscussion, isMyTurn, isMicActive]);
 
-  const handleToggleMic = () => {
-    if (isQueueBasedDiscussion) {
-      if (isMyTurn) {
-        setIsMicActive(!isMicActive);
-      } else {
-        setIsMicActive(false);
-      }
+  const handleToggleMic = async () => {
+    if (isQueueBasedDiscussion && !isMyTurn) {
+      return;
+    }
+
+    if (!isMicActive) {
+      await startVoiceChat();
+      setIsMicActive(true);
     } else {
-      setIsMicActive(!isMicActive);
+      stopVoiceChat();
+      setIsMicActive(false);
     }
   };
 
@@ -445,21 +483,56 @@ function DiscussionPage() {
                   onClick={handleToggleMic}
                   disabled={isQueueBasedDiscussion && !isMyTurn}
                   sx={{
-                    bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
-                    color: "white",
                     width: 80,
                     height: 80,
-                    mb: 2,
+                    bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
+                    color: "white",
+                    position: "relative",
                     "&:hover": {
                       bgcolor: isMicActive ? "#219150" : "#c0392b",
                     },
                     "&.Mui-disabled": {
                       bgcolor: "action.disabledBackground",
                     },
+                    "&::before": isMicActive
+                      ? {
+                          content: '""',
+                          position: "absolute",
+                          inset: -4,
+                          borderRadius: "50%",
+                          border: "3px solid #27ae60",
+                          animation: "pulse 1.5s ease-out infinite",
+                        }
+                      : {},
+                    "@keyframes pulse": {
+                      "0%": {
+                        transform: "scale(1)",
+                        opacity: 0.8,
+                      },
+                      "50%": {
+                        transform: "scale(1.1)",
+                        opacity: 0.4,
+                      },
+                      "100%": {
+                        transform: "scale(1)",
+                        opacity: 0.8,
+                      },
+                    },
                   }}
                 >
                   {isMicActive ? (
-                    <MicIcon sx={{ fontSize: 40 }} />
+                    <MicIcon
+                      sx={{
+                        fontSize: 40,
+                        animation: "vibrate 0.3s linear infinite",
+                        "@keyframes vibrate": {
+                          "0%": { transform: "translateY(0)" },
+                          "25%": { transform: "translateY(-1px)" },
+                          "75%": { transform: "translateY(1px)" },
+                          "100%": { transform: "translateY(0)" },
+                        },
+                      }}
+                    />
                   ) : (
                     <MicOffIcon
                       sx={{ fontSize: 40, textDecoration: "line-through" }}
