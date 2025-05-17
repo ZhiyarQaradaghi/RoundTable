@@ -49,7 +49,7 @@ import { reportUserOrDiscussion } from "../hooks/useReports";
 import UserNameWithRole from "../components/UserNameWithRole";
 import Reactions from "../components/Discussions/Reactions";
 import FloatingReaction from "../components/Discussions/FloatingReaction";
-
+import PropTypes from "prop-types";
 function DiscussionPage() {
   const { discussionId } = useParams();
   const navigate = useNavigate();
@@ -57,10 +57,13 @@ function DiscussionPage() {
   const { currentDiscussion, fetchDiscussionById, leaveDiscussion } =
     useDiscussionFilters();
   const { socket } = useSocket();
-  const { startVoiceChat, stopVoiceChat, peers } = useVoiceChat(
-    socket,
-    discussionId
-  );
+  const {
+    startVoiceChat,
+    stopVoiceChat,
+    peers,
+    speakingUsers,
+    isLocalSpeaking,
+  } = useVoiceChat(socket, discussionId);
   const [isMicActive, setIsMicActive] = useState(false);
   const [speakingQueue, setSpeakingQueue] = useState([]);
   const [participants, setParticipants] = useState([]);
@@ -363,6 +366,118 @@ function DiscussionPage() {
     }
   };
 
+  const ParticipantItem = ({ participant }) => {
+    const isSpeaking =
+      speakingUsers.has(participant._id) ||
+      (participant._id === user?._id && isLocalSpeaking);
+    const isFreeTalkType =
+      currentDiscussion?.type?.toLowerCase() === "free talk";
+
+    return (
+      <ListItem
+        sx={{
+          transition: "all 0.2s ease",
+          border: isSpeaking ? "2px solid #27ae60" : "none",
+          backgroundColor: isSpeaking
+            ? "rgba(39, 174, 96, 0.1)"
+            : "transparent",
+          borderRadius: "8px",
+          margin: "4px 0",
+          position: "relative",
+          "&::before": isSpeaking
+            ? {
+                content: '""',
+                position: "absolute",
+                left: -2,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "4px",
+                height: "70%",
+                backgroundColor: "#27ae60",
+                borderRadius: "4px",
+              }
+            : {},
+        }}
+      >
+        <ListItemAvatar>
+          <Avatar
+            src={participant.avatar}
+            sx={{
+              border: isSpeaking ? "2px solid #27ae60" : "none",
+              transition: "all 0.2s ease",
+            }}
+          />
+        </ListItemAvatar>
+        <ListItemText
+          primary={participant.username}
+          secondary={isSpeaking ? "Speaking..." : ""}
+          primaryTypographyProps={{
+            fontWeight: isSpeaking ? 600 : 400,
+          }}
+        />
+      </ListItem>
+    );
+  };
+
+  const MicButton = () => (
+    <IconButton
+      onClick={handleToggleMic}
+      disabled={isQueueBasedDiscussion && !isMyTurn}
+      sx={{
+        width: 80,
+        height: 80,
+        bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
+        color: "white",
+        "&:hover": {
+          bgcolor: isMicActive ? "#219150" : "#c0392b",
+        },
+        "@keyframes pulse": {
+          "0%": { transform: "scale(1)", opacity: 1 },
+          "50%": { transform: "scale(1.2)", opacity: 0.5 },
+          "100%": { transform: "scale(1)", opacity: 1 },
+        },
+        "@keyframes vibrate": {
+          "0%": { transform: "translateX(0)" },
+          "25%": { transform: "translateX(2px)" },
+          "75%": { transform: "translateX(-2px)" },
+          "100%": { transform: "translateX(0)" },
+        },
+        "&::before":
+          isMicActive && isLocalSpeaking
+            ? {
+                content: '""',
+                position: "absolute",
+                inset: -4,
+                borderRadius: "50%",
+                border: "2px solid #27ae60",
+                animation: "pulse 1s ease-out infinite",
+              }
+            : {},
+      }}
+    >
+      {isMicActive ? (
+        <MicIcon
+          sx={{
+            fontSize: 40,
+            animation: isLocalSpeaking
+              ? "vibrate 0.3s linear infinite"
+              : "none",
+          }}
+        />
+      ) : (
+        <MicOffIcon sx={{ fontSize: 40 }} />
+      )}
+    </IconButton>
+  );
+
+  ParticipantItem.propTypes = {
+    participant: PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      username: PropTypes.string.isRequired,
+      avatar: PropTypes.string,
+    }).isRequired,
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#fafafa" }}>
       <Navigation />
@@ -384,43 +499,10 @@ function DiscussionPage() {
             </Stack>
             <List>
               {participants.map((participant) => (
-                <ListItem
+                <ParticipantItem
                   key={participant._id || participant.id}
-                  sx={{
-                    px: 1,
-                    py: 1,
-                    borderRadius: 1,
-                    "&:hover": { bgcolor: "#f5f5f5" },
-                  }}
-                >
-                  <ListItemAvatar>
-                    <Avatar
-                      src={participant.avatar}
-                      sx={{ width: 36, height: 36 }}
-                    >
-                      {participant.name
-                        ? participant.name[0]
-                        : participant.username
-                        ? participant.username[0]
-                        : "?"}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={<UserNameWithRole user={participant} />}
-                    primaryTypographyProps={{ fontSize: "0.95rem" }}
-                  />
-                  <IconButton
-                    size="small"
-                    sx={{
-                      ml: 1,
-                      color: "#b0b3b8",
-                      "&:hover": { color: "#ff9800", bgcolor: "transparent" },
-                    }}
-                    onClick={() => openReportModal(participant, "user")}
-                  >
-                    <ReportIcon fontSize="small" />
-                  </IconButton>
-                </ListItem>
+                  participant={participant}
+                />
               ))}
             </List>
             <Button
@@ -503,66 +585,7 @@ function DiscussionPage() {
               }}
             >
               <Stack direction="row" spacing={2} alignItems="center">
-                <IconButton
-                  onClick={handleToggleMic}
-                  disabled={isQueueBasedDiscussion && !isMyTurn}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
-                    color: "white",
-                    position: "relative",
-                    "&:hover": {
-                      bgcolor: isMicActive ? "#219150" : "#c0392b",
-                    },
-                    "&.Mui-disabled": {
-                      bgcolor: "action.disabledBackground",
-                    },
-                    "&::before": isMicActive
-                      ? {
-                          content: '""',
-                          position: "absolute",
-                          inset: -4,
-                          borderRadius: "50%",
-                          border: "3px solid #27ae60",
-                          animation: "pulse 1.5s ease-out infinite",
-                        }
-                      : {},
-                    "@keyframes pulse": {
-                      "0%": {
-                        transform: "scale(1)",
-                        opacity: 0.8,
-                      },
-                      "50%": {
-                        transform: "scale(1.1)",
-                        opacity: 0.4,
-                      },
-                      "100%": {
-                        transform: "scale(1)",
-                        opacity: 0.8,
-                      },
-                    },
-                  }}
-                >
-                  {isMicActive ? (
-                    <MicIcon
-                      sx={{
-                        fontSize: 40,
-                        animation: "vibrate 0.3s linear infinite",
-                        "@keyframes vibrate": {
-                          "0%": { transform: "translateY(0)" },
-                          "25%": { transform: "translateY(-1px)" },
-                          "75%": { transform: "translateY(1px)" },
-                          "100%": { transform: "translateY(0)" },
-                        },
-                      }}
-                    />
-                  ) : (
-                    <MicOffIcon
-                      sx={{ fontSize: 40, textDecoration: "line-through" }}
-                    />
-                  )}
-                </IconButton>
+                <MicButton />
               </Stack>
               <Typography variant="caption" color="text.secondary">
                 {isMicActive ? "Mic On" : "Mic Off"}
@@ -916,5 +939,29 @@ function DiscussionPage() {
     </Box>
   );
 }
+
+DiscussionPage.propTypes = {
+  participants: PropTypes.array.isRequired,
+  currentDiscussion: PropTypes.object.isRequired,
+  isMicActive: PropTypes.bool.isRequired,
+  handleToggleMic: PropTypes.func.isRequired,
+  handleToggleQueue: PropTypes.func.isRequired,
+  handleLeaveDiscussion: PropTypes.func.isRequired,
+  handleSendChatMessage: PropTypes.func.isRequired,
+  userInSpeakingQueue: PropTypes.bool.isRequired,
+  formatMessageTimestamp: PropTypes.func.isRequired,
+  openReportModal: PropTypes.func.isRequired,
+  handleReportSubmit: PropTypes.func.isRequired,
+  handleReaction: PropTypes.func.isRequired,
+  ParticipantItem: PropTypes.func.isRequired,
+  speakingUsers: PropTypes.object.isRequired,
+  peers: PropTypes.object.isRequired,
+  startVoiceChat: PropTypes.func.isRequired,
+  stopVoiceChat: PropTypes.func.isRequired,
+  isQueueBasedDiscussion: PropTypes.bool.isRequired,
+  isMyTurn: PropTypes.bool.isRequired,
+  isFreeTalkType: PropTypes.bool.isRequired,
+  isLocalSpeaking: PropTypes.bool.isRequired,
+};
 
 export default DiscussionPage;

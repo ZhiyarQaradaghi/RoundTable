@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 export const useVoiceChat = (socket, discussionId) => {
   const [peers, setPeers] = useState({});
+  const [speakingUsers, setSpeakingUsers] = useState(new Set());
+  const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
   const localStreamRef = useRef(null);
   const peerConnections = useRef({});
 
@@ -56,6 +58,9 @@ export const useVoiceChat = (socket, discussionId) => {
           ...prev,
           [targetUserId]: remoteStream,
         }));
+
+        const audioContext = new AudioContext();
+        checkAudioLevel(audioContext, remoteStream, targetUserId);
       }
     };
 
@@ -75,6 +80,36 @@ export const useVoiceChat = (socket, discussionId) => {
     };
 
     return pc;
+  };
+
+  const checkAudioLevel = (audioContext, stream, userId) => {
+    const analyzer = audioContext.createAnalyser();
+    analyzer.fftSize = 1024;
+    analyzer.smoothingTimeConstant = 0.3;
+
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyzer);
+    const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+
+    const checkLevel = () => {
+      analyzer.getByteFrequencyData(dataArray);
+      const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+      if (audioLevel > 10) {
+        setSpeakingUsers((prev) => new Set(prev).add(userId));
+        setIsLocalSpeaking(true);
+        setTimeout(() => {
+          setSpeakingUsers((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(userId);
+            return newSet;
+          });
+          setIsLocalSpeaking(false);
+        }, 300);
+      }
+      requestAnimationFrame(checkLevel);
+    };
+    checkLevel();
   };
 
   const startVoiceChat = async () => {
@@ -100,8 +135,12 @@ export const useVoiceChat = (socket, discussionId) => {
         if (!localStreamRef.current) return;
         analyzer.getByteFrequencyData(dataArray);
         const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        if (audioLevel > 0.1) {
+
+        if (audioLevel > 10) {
+          setIsLocalSpeaking(true);
           console.log("Local audio level:", audioLevel.toFixed(2));
+        } else {
+          setIsLocalSpeaking(false);
         }
         requestAnimationFrame(checkAudioLevel);
       };
@@ -215,5 +254,11 @@ export const useVoiceChat = (socket, discussionId) => {
     };
   }, [socket, discussionId]);
 
-  return { startVoiceChat, stopVoiceChat, peers };
+  return {
+    startVoiceChat,
+    stopVoiceChat,
+    peers,
+    speakingUsers,
+    isLocalSpeaking,
+  };
 };
