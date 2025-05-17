@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import PropTypes from "prop-types";
-
+import { getApiUrl } from "../config/api";
 const SocketContext = createContext();
 
 export const useSocket = () => {
@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const newSocket = io(import.meta.env.VITE_BACKEND_URL, {
+      const newSocket = io(getApiUrl(""), {
         withCredentials: true,
       });
 

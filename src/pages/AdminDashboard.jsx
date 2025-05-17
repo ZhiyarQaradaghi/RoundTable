@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { useAuth } from "../context/AuthContext";
 import UserNameWithRole from "../components/UserNameWithRole";
+import { getApiUrl } from "../config/api";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
-    fetch("/api/reports", { credentials: "include" })
+    fetch(getApiUrl("/api/reports"), { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         setReports(data.reports || []);
@@ -36,7 +37,7 @@ export default function AdminDashboard() {
 
   const handleUpdateStatus = async (id, status) => {
     setUpdatingId(id);
-    await fetch(`/api/reports/${id}/status`, {
+    await fetch(getApiUrl(`/api/reports/${id}/status`), {
       method: "PATCH",
       credentials: "include",
       headers: {

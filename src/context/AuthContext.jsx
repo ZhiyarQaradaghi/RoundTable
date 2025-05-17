@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import PropTypes from "prop-types";
-
+import { getApiUrl } from "../config/api";
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch(getApiUrl("/api/auth/me"), {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
@@ -41,7 +41,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(getApiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(getApiUrl("/api/auth/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/logout", {
+      const response = await fetch(getApiUrl("/api/auth/logout"), {
         method: "POST",
         credentials: "include",
       });
@@ -109,7 +109,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/users/profile", {
+      const response = await fetch(getApiUrl("/api/users/profile"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

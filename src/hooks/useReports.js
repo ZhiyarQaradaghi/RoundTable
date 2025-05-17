@@ -1,3 +1,5 @@
+import { getApiUrl } from "../config/api";
+
 export const reportUserOrDiscussion = async ({
   reportedUser,
   discussion,
@@ -10,7 +12,7 @@ export const reportUserOrDiscussion = async ({
   };
   if (reportedUser) body.reportedUser = reportedUser;
   if (discussion) body.discussion = discussion;
-  const response = await fetch("/api/reports", {
+  const response = await fetch(getApiUrl("/api/reports"), {
     method: "POST",
     credentials: "include",
     headers: {

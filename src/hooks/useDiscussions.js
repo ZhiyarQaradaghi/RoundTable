@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getApiUrl } from "../config/api";
 
 const AVAILABLE_TYPES = [
   { id: "free talk", label: "Free Talk" },
@@ -44,15 +45,18 @@ export const useDiscussionFilters = () => {
         }
       });
       const queryParams = new URLSearchParams(activeFilters);
-      const response = await fetch(`/api/discussions?${queryParams}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        mode: "cors",
-      });
+      const response = await fetch(
+        getApiUrl(`/api/discussions?${queryParams}`),
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          mode: "cors",
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -86,7 +90,7 @@ export const useDiscussionFilters = () => {
   };
 
   const createDiscussion = async (discussionData) => {
-    const response = await fetch("/api/discussions", {
+    const response = await fetch(getApiUrl("/api/discussions"), {
       method: "POST",
       credentials: "include",
       headers: {
@@ -113,12 +117,15 @@ export const useDiscussionFilters = () => {
     setLoadingDiscussion(true);
     setCurrentDiscussion(null);
     try {
-      const response = await fetch(`/api/discussions/${discussionId}`, {
-        method: "GET",
-        credentials: "include",
-        headers: { Accept: "application/json" },
-        mode: "cors",
-      });
+      const response = await fetch(
+        getApiUrl(`/api/discussions/${discussionId}`),
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+          mode: "cors",
+        }
+      );
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
@@ -139,15 +146,18 @@ export const useDiscussionFilters = () => {
 
   const joinDiscussionById = async (discussionId) => {
     try {
-      const response = await fetch(`/api/discussions/${discussionId}/join`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        mode: "cors",
-      });
+      const response = await fetch(
+        getApiUrl(`/api/discussions/${discussionId}/join`),
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          mode: "cors",
+        }
+      );
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
@@ -165,15 +175,18 @@ export const useDiscussionFilters = () => {
 
   const leaveDiscussion = async (discussionId) => {
     try {
-      const response = await fetch(`/api/discussions/${discussionId}/leave`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        mode: "cors",
-      });
+      const response = await fetch(
+        getApiUrl(`/api/discussions/${discussionId}/leave`),
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          mode: "cors",
+        }
+      );
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
@@ -208,14 +221,17 @@ export const useDiscussionFilters = () => {
 export const fetchChatMessagesForDiscussion = async (discussionId) => {
   if (!discussionId) throw new Error("Discussion ID is required.");
   try {
-    const response = await fetch(`/api/discussions/${discussionId}/messages`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
-      mode: "cors",
-    });
+    const response = await fetch(
+      getApiUrl(`/api/discussions/${discussionId}/messages`),
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+        mode: "cors",
+      }
+    );
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
@@ -234,16 +250,19 @@ export const sendChatMessageForDiscussion = async (discussionId, content) => {
   if (!content || content.trim() === "")
     throw new Error("Message content cannot be empty.");
   try {
-    const response = await fetch(`/api/discussions/${discussionId}/messages`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      mode: "cors",
-      body: JSON.stringify({ content }),
-    });
+    const response = await fetch(
+      getApiUrl(`/api/discussions/${discussionId}/messages`),
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        mode: "cors",
+        body: JSON.stringify({ content }),
+      }
+    );
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
