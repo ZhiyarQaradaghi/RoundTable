@@ -3,7 +3,6 @@ import {
   Toolbar,
   Typography,
   Button,
-  Box,
   Avatar,
   CircularProgress,
   Container,
@@ -14,10 +13,8 @@ import {
 } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import LogoutIcon from "@mui/icons-material/Logout";
 import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
-import AccountCircle from "@mui/icons-material/AccountCircle";
 
 function Navigation() {
   const { loading, username, name, avatar, logout } = useAuth();
@@ -52,8 +49,6 @@ function Navigation() {
       </AppBar>
     );
   }
-
-  const displayName = name || username;
 
   return (
     <AppBar position="fixed" color="default" elevation={1}>

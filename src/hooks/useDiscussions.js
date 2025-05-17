@@ -90,27 +90,40 @@ export const useDiscussionFilters = () => {
   };
 
   const createDiscussion = async (discussionData) => {
-    const response = await fetch(getApiUrl("/api/discussions"), {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      mode: "cors",
-      body: JSON.stringify(discussionData),
-    });
+    try {
+      const formattedData = {
+        ...discussionData,
+        type: discussionData.type === "queue" ? "Queue Based" : "Free Talk",
+        startTime: new Date(discussionData.startTime).toISOString(),
+        endTime: discussionData.endTime
+          ? new Date(discussionData.endTime).toISOString()
+          : undefined,
+        participants: [],
+        speakingQueue: [],
+      };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error?.message || `HTTP error! status: ${response.status}`
-      );
+      const response = await fetch(getApiUrl("/api/discussions"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(formattedData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error:", errorData);
+        throw new Error(
+          errorData.message || errorData.error || "Failed to create discussion"
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Create discussion error:", error);
+      throw error;
     }
-
-    const data = await response.json();
-    await fetchDiscussions();
-    return data;
   };
 
   const fetchDiscussionById = useCallback(async (discussionId) => {

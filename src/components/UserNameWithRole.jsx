@@ -1,5 +1,5 @@
 import { Typography, Box } from "@mui/material";
-
+import PropTypes from "prop-types";
 export default function UserNameWithRole({ user }) {
   if (!user) {
     return null;
@@ -25,3 +25,11 @@ export default function UserNameWithRole({ user }) {
     </Box>
   );
 }
+
+UserNameWithRole.propTypes = {
+  user: PropTypes.shape({
+    name: PropTypes.string,
+    username: PropTypes.string,
+    role: PropTypes.string,
+  }).isRequired,
+};
