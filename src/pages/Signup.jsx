@@ -39,7 +39,7 @@ function Signup() {
       };
 
       await signup(credentials);
-      navigate("/home");
+      navigate("/");
     } catch (err) {
       console.error("Signup failed:", err);
       setError(err.message);
