@@ -1,29 +1,71 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Landing from "./pages/Landing";
+import ConfirmJoinDiscussion from "./pages/ConfirmJoinDiscussion";
+import ProfilePage from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
-import CreateDiscussionPage from "./pages/CreateDiscussion/CreateDiscussionPage";
-import "./index.css";
+import NotFound from "./pages/NotFound";
+import DiscussionPage from "./pages/DiscussionPage";
+import { SocketProvider } from "./contexts/SocketContext.jsx";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/create-discussion" element={<CreateDiscussionPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <SocketProvider>
+        <Routes>
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/discussions/:discussionId/join"
+            element={
+              <ProtectedRoute>
+                <ConfirmJoinDiscussion />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/discussions/:discussionId"
+            element={
+              <ProtectedRoute>
+                <DiscussionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </SocketProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,0 +1,204 @@
+.container {
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.content {
+  display: flex;
+  gap: 2rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-top: 6rem;
+}
+
+.sidebar {
+  width: 320px;
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  height: calc(100vh - 6rem);
+  position: sticky;
+  top: 6rem;
+  border: 1.5px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.userProfile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1.5px solid #e5e7eb;
+}
+
+.avatarWrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.avatarWrapper:hover {
+  transform: scale(1.05);
+}
+
+.avatarWrapper:hover .avatarOverlay {
+  opacity: 1;
+}
+
+.avatarOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profileIcon {
+  color: white;
+  font-size: 1.5rem;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 1.5rem;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.onlineStatus {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  background: #10b981;
+  border-radius: 50%;
+  border: 3px solid white;
+}
+
+.userName {
+  margin-top: 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.userStatus {
+  margin-top: 0.5rem;
+  padding: 0.4rem 1rem;
+  background: #f3f4f6;
+  border-radius: 2rem;
+  font-size: 0.85rem;
+  color: #111;
+  font-weight: 500;
+}
+
+.mainContent {
+  flex: 1;
+  max-width: calc(100% - 344px);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.createButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1.5rem;
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.createButton:hover {
+  background: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.buttonIcon {
+  font-size: 0.875rem;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.loadingSpinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #e2e8f0;
+  border-top-color: #1e293b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1024px) {
+  .content {
+    flex-direction: column;
+    padding: 1rem;
+    padding-top: 5rem;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-right: none;
+  }
+
+  .mainContent {
+    max-width: 100%;
+  }
+
+  .avatar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .userName {
+    font-size: 1.25rem;
+  }
+}

@@ -1,0 +1,751 @@
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import {
+  useDiscussionFilters,
+  fetchChatMessagesForDiscussion,
+  sendChatMessageForDiscussion,
+} from "../hooks/useDiscussions";
+import { useSocket } from "../contexts/SocketContext.jsx";
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  Button,
+  Divider,
+  IconButton,
+  Stack,
+  Chip,
+  Drawer,
+  TextField,
+  Fab,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
+import MicIcon from "@mui/icons-material/Mic";
+import MicOffIcon from "@mui/icons-material/MicOff";
+import GroupIcon from "@mui/icons-material/Group";
+import CategoryIcon from "@mui/icons-material/Category";
+import LogoutIcon from "@mui/icons-material/Logout";
+import ChatIcon from "@mui/icons-material/Chat";
+import SendIcon from "@mui/icons-material/Send";
+import ReportIcon from "@mui/icons-material/Report";
+import Navigation from "../components/Navigation/Navigation";
+import { reportUserOrDiscussion } from "../hooks/useReports";
+import UserNameWithRole from "../components/UserNameWithRole";
+
+function DiscussionPage() {
+  const { discussionId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { currentDiscussion, fetchDiscussionById, leaveDiscussion } =
+    useDiscussionFilters();
+  const { socket } = useSocket();
+  const [isMicActive, setIsMicActive] = useState(false);
+  const [speakingQueue, setSpeakingQueue] = useState([]);
+  const [participants, setParticipants] = useState([]);
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [currentChatMessage, setCurrentChatMessage] = useState("");
+  const [isLoadingChatMessages, setIsLoadingChatMessages] = useState(false);
+  const chatMessagesEndRef = useRef(null);
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportType, setReportType] = useState("user");
+  const [reportCategory, setReportCategory] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState("");
+
+  const scrollToBottom = () => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
+  useEffect(() => {
+    if (discussionId) {
+      fetchDiscussionById(discussionId);
+      const loadMessages = async () => {
+        setIsLoadingChatMessages(true);
+        try {
+          const messagesData = await fetchChatMessagesForDiscussion(
+            discussionId
+          );
+          const formattedMessages = (messagesData.messages || []).map(
+            (msg) => ({
+              ...msg,
+              text: msg.content || msg.text,
+            })
+          );
+          setChatMessages(formattedMessages);
+        } catch (error) {
+          console.error("Failed to load chat messages:", error);
+          setChatMessages([]);
+        } finally {
+          setIsLoadingChatMessages(false);
+        }
+      };
+      loadMessages();
+    }
+  }, [discussionId, fetchDiscussionById]);
+
+  useEffect(() => {
+    if (currentDiscussion) {
+      setParticipants(currentDiscussion.participants || []);
+      setSpeakingQueue(currentDiscussion.speakingQueue || []);
+    }
+  }, [currentDiscussion]);
+
+  useEffect(() => {
+    if (socket && discussionId) {
+      socket.emit("join_discussion", discussionId);
+
+      socket.on("connect", () => {});
+
+      socket.on("speaking_queue_updated", (updatedQueue) => {
+        setSpeakingQueue(updatedQueue);
+      });
+
+      socket.on("participants_updated", (updatedParticipants) => {
+        setParticipants(updatedParticipants);
+      });
+
+      socket.on("member_left", ({ userId }) => {
+        setParticipants((prevParticipants) =>
+          prevParticipants.filter((p) => p._id !== userId)
+        );
+      });
+
+      socket.on("receive_message", (newMessage) => {
+        setChatMessages((prevMessages) => {
+          if (!prevMessages.find((msg) => msg._id === newMessage._id)) {
+            const messageToDisplay = {
+              ...newMessage,
+              text: newMessage.content,
+            };
+            return [...prevMessages, messageToDisplay];
+          }
+          return prevMessages;
+        });
+      });
+
+      return () => {
+        socket.off("speaking_queue_updated");
+        socket.off("participants_updated");
+        socket.off("member_left");
+        socket.off("connect");
+        socket.off("receive_message");
+      };
+    }
+  }, [socket, discussionId]);
+
+  const isFreeTalkType = currentDiscussion?.type?.toLowerCase() === "free talk";
+  const isQueueBasedDiscussion = !isFreeTalkType;
+
+  const isMyTurn =
+    user &&
+    speakingQueue.length > 0 &&
+    String(speakingQueue[0]._id) === String(user._id);
+
+  useEffect(() => {
+    if (isQueueBasedDiscussion && !isMyTurn && isMicActive) {
+      setIsMicActive(false);
+    }
+  }, [isQueueBasedDiscussion, isMyTurn, isMicActive]);
+
+  const handleToggleMic = () => {
+    if (isQueueBasedDiscussion) {
+      if (isMyTurn) {
+        setIsMicActive(!isMicActive);
+      } else {
+        setIsMicActive(false);
+      }
+    } else {
+      setIsMicActive(!isMicActive);
+    }
+  };
+
+  const handleToggleQueue = () => {
+    if (!socket || !user || !discussionId) return;
+    try {
+      const userInQueue = speakingQueue.some(
+        (speaker) => String(speaker?._id) === String(user?._id)
+      );
+      const event = userInQueue
+        ? "leave_speaking_queue"
+        : "join_speaking_queue";
+      socket.emit(event, { discussionId });
+    } catch (error) {
+      console.error("Error in handleToggleQueue:", error);
+    }
+  };
+
+  const handleLeaveDiscussion = async () => {
+    try {
+      if (socket && discussionId) {
+        socket.emit("leave_discussion", discussionId);
+      }
+      await leaveDiscussion(discussionId);
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to leave discussion:", error);
+    }
+  };
+
+  const handleSendChatMessage = async () => {
+    if (currentChatMessage.trim() && user && discussionId) {
+      try {
+        await sendChatMessageForDiscussion(
+          discussionId,
+          currentChatMessage.trim()
+        );
+        setCurrentChatMessage("");
+      } catch (error) {
+        console.error("Failed to send message:", error);
+      }
+    }
+  };
+
+  const userInSpeakingQueue =
+    user &&
+    speakingQueue.some((speaker) => String(speaker._id) === String(user._id));
+
+  const formatMessageTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const openReportModal = (target, type = "user") => {
+    setReportTarget(target);
+    setReportType(type);
+    setReportCategory("");
+    setReportDescription("");
+    setReportOpen(true);
+    setReportSuccess(false);
+    setReportError("");
+  };
+
+  const handleReportSubmit = async () => {
+    setReportLoading(true);
+    setReportError("");
+    try {
+      await reportUserOrDiscussion({
+        reportedUser: reportType === "user" ? reportTarget._id : undefined,
+        discussion: reportType === "discussion" ? discussionId : undefined,
+        category: reportCategory,
+        description: reportDescription,
+      });
+      setReportSuccess(true);
+      setReportOpen(false);
+    } catch (err) {
+      setReportError("Failed to submit report.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: "100vh", bgcolor: "#fafafa" }}>
+      <Navigation />
+      <Container maxWidth="lg" sx={{ pt: 10, pb: 4 }}>
+        <Box sx={{ display: "flex", gap: 3 }}>
+          <Paper
+            sx={{ width: 280, p: 3, borderRadius: 2, alignSelf: "flex-start" }}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 3 }}
+            >
+              <GroupIcon />
+              <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+                Participants ({participants.length})
+              </Typography>
+            </Stack>
+            <List>
+              {participants.map((participant) => (
+                <ListItem
+                  key={participant._id || participant.id}
+                  sx={{
+                    px: 1,
+                    py: 1,
+                    borderRadius: 1,
+                    "&:hover": { bgcolor: "#f5f5f5" },
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Avatar
+                      src={participant.avatar}
+                      sx={{ width: 36, height: 36 }}
+                    >
+                      {participant.name
+                        ? participant.name[0]
+                        : participant.username
+                        ? participant.username[0]
+                        : "?"}
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={<UserNameWithRole user={participant} />}
+                    primaryTypographyProps={{ fontSize: "0.95rem" }}
+                  />
+                  <IconButton
+                    size="small"
+                    sx={{
+                      ml: 1,
+                      color: "#b0b3b8",
+                      "&:hover": { color: "#ff9800", bgcolor: "transparent" },
+                    }}
+                    onClick={() => openReportModal(participant, "user")}
+                  >
+                    <ReportIcon fontSize="small" />
+                  </IconButton>
+                </ListItem>
+              ))}
+            </List>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="error"
+              startIcon={<LogoutIcon />}
+              onClick={handleLeaveDiscussion}
+              sx={{
+                mt: 2,
+                borderColor: "error.main",
+                color: "error.main",
+                "&:hover": {
+                  borderColor: "error.dark",
+                  bgcolor: "error.lighter",
+                },
+              }}
+            >
+              Leave Discussion
+            </Button>
+          </Paper>
+
+          <Paper sx={{ flex: 1, p: 4, borderRadius: 2 }}>
+            {currentDiscussion && (
+              <>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                  <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{ fontWeight: 700, flex: 1 }}
+                  >
+                    {currentDiscussion.title}
+                  </Typography>
+                  <IconButton
+                    size="medium"
+                    sx={{
+                      color: "#b0b3b8",
+                      ml: 1,
+                      "&:hover": { color: "#ff9800", bgcolor: "transparent" },
+                    }}
+                    onClick={() =>
+                      openReportModal(currentDiscussion, "discussion")
+                    }
+                  >
+                    <ReportIcon fontSize="medium" />
+                  </IconButton>
+                </Box>
+                <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+                  <Chip
+                    icon={<CategoryIcon />}
+                    label={currentDiscussion.topic}
+                    size="small"
+                  />
+                  <Chip
+                    label={currentDiscussion.type}
+                    size="small"
+                    color={
+                      currentDiscussion.type?.toLowerCase() === "free talk"
+                        ? "secondary"
+                        : "primary"
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 4, whiteSpace: "pre-wrap" }}
+                >
+                  {currentDiscussion.description}
+                </Typography>
+              </>
+            )}
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                mb: 4,
+              }}
+            >
+              <IconButton
+                onClick={handleToggleMic}
+                disabled={isQueueBasedDiscussion && !isMyTurn}
+                sx={{
+                  bgcolor: isMicActive ? "#27ae60" : "#e74c3c",
+                  color: "white",
+                  width: 80,
+                  height: 80,
+                  mb: 2,
+                  "&:hover": {
+                    bgcolor: isMicActive ? "#219150" : "#c0392b",
+                  },
+                  "&.Mui-disabled": {
+                    bgcolor: "action.disabledBackground",
+                  },
+                }}
+              >
+                {isMicActive ? (
+                  <MicIcon sx={{ fontSize: 40 }} />
+                ) : (
+                  <MicOffIcon
+                    sx={{ fontSize: 40, textDecoration: "line-through" }}
+                  />
+                )}
+              </IconButton>
+              <Typography variant="caption" color="text.secondary">
+                {isMicActive ? "Mic On" : "Mic Off"}
+                {isQueueBasedDiscussion && !isMyTurn && " (Not your turn)"}
+              </Typography>
+            </Box>
+
+            {isQueueBasedDiscussion && (
+              <>
+                <Button
+                  variant="contained"
+                  onClick={handleToggleQueue}
+                  disabled={!user}
+                  sx={{
+                    display: "block",
+                    mx: "auto",
+                    mb: 4,
+                    px: 3,
+                    py: 1.5,
+                    bgcolor: userInSpeakingQueue ? "error.main" : "#000",
+                    color: "#fff",
+                    fontWeight: 600,
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: userInSpeakingQueue ? "error.dark" : "#222",
+                      transform: "translateY(-1px)",
+                    },
+                    "&:active": {
+                      transform: "translateY(0)",
+                    },
+                  }}
+                >
+                  {userInSpeakingQueue
+                    ? "Leave Speaking Queue"
+                    : "Join Speaking Queue"}
+                </Button>
+
+                {speakingQueue.length > 0 && (
+                  <Box sx={{ mb: 4 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, mb: 2, textAlign: "center" }}
+                    >
+                      Speaking Queue
+                    </Typography>
+                    <List sx={{ bgcolor: "#f8f9fa", borderRadius: 2, p: 2 }}>
+                      {speakingQueue.map((speaker, index) => (
+                        <ListItem
+                          key={speaker._id || speaker.id}
+                          sx={{
+                            bgcolor: index === 0 ? "#fff" : "transparent",
+                            borderRadius: 2,
+                            mb: 1,
+                            boxShadow:
+                              index === 0
+                                ? "0 2px 4px rgba(0,0,0,0.05)"
+                                : "none",
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Avatar
+                              src={speaker.avatar}
+                              sx={{
+                                bgcolor: index === 0 ? "#000" : "#666",
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              {speaker.name
+                                ? speaker.name[0]
+                                : speaker.username
+                                ? speaker.username[0]
+                                : "?"}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={<UserNameWithRole user={speaker} />}
+                            secondary={
+                              index === 0
+                                ? "Currently Speaking"
+                                : `#${index + 1} in queue`
+                            }
+                            primaryTypographyProps={{
+                              fontWeight: index === 0 ? 600 : 400,
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
+              </>
+            )}
+          </Paper>
+        </Box>
+      </Container>
+
+      <Fab
+        aria-label="chat"
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          bgcolor: "#fff",
+          color: "#000",
+          border: "2px solid #000",
+          "&:hover": {
+            bgcolor: "#f5f5f5",
+            color: "#222",
+            borderColor: "#222",
+          },
+        }}
+        onClick={() => setIsChatOpen(true)}
+      >
+        <ChatIcon sx={{ color: "#000" }} />
+      </Fab>
+
+      <Drawer
+        anchor="right"
+        open={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 360,
+            bgcolor: "background.default",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            p: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            Discussion Chat
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ flexGrow: 1, overflowY: "auto", mb: 2 }}>
+            {isLoadingChatMessages ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100%",
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            ) : (
+              <List>
+                {chatMessages.map((msg) => (
+                  <ListItem
+                    key={msg._id}
+                    alignItems="flex-start"
+                    sx={{
+                      bgcolor:
+                        msg.sender._id === user?._id
+                          ? "primary.lighter"
+                          : "grey.100",
+                      borderRadius: "8px",
+                      mb: 1,
+                      p: 1.5,
+                    }}
+                  >
+                    <ListItemAvatar sx={{ minWidth: 48 }}>
+                      <Avatar src={msg.sender.avatar}>
+                        {msg.sender.name
+                          ? msg.sender.name[0]
+                          : msg.sender.username
+                          ? msg.sender.username[0]
+                          : "U"}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {<UserNameWithRole user={msg.sender} />}
+                        </Typography>
+                      }
+                      secondary={
+                        <>
+                          <Typography
+                            variant="body2"
+                            component="span"
+                            sx={{ wordBreak: "break-word", display: "block" }}
+                          >
+                            {msg.text}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            component="span"
+                            sx={{
+                              color: "text.secondary",
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            {formatMessageTimestamp(msg.createdAt)}
+                          </Typography>
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+                <div ref={chatMessagesEndRef} />
+              </List>
+            )}
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              mt: "auto",
+              pt: 1,
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <TextField
+              fullWidth
+              variant="outlined"
+              size="small"
+              placeholder="Type a message..."
+              value={currentChatMessage}
+              onChange={(e) => setCurrentChatMessage(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendChatMessage();
+                }
+              }}
+              sx={{
+                mr: 1,
+                bgcolor: "background.paper",
+                borderRadius: "6px",
+              }}
+            />
+            <IconButton
+              color="primary"
+              onClick={handleSendChatMessage}
+              disabled={!currentChatMessage.trim()}
+              sx={{
+                bgcolor: "primary.main",
+                color: "white",
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
+              <SendIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      </Drawer>
+
+      <Dialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          {reportType === "user" ? "Report Participant" : "Report Discussion"}
+        </DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="category-label">Reason</InputLabel>
+            <Select
+              labelId="category-label"
+              value={reportCategory}
+              label="Reason"
+              onChange={(e) => setReportCategory(e.target.value)}
+            >
+              <MenuItem value="harassment">Harassment</MenuItem>
+              <MenuItem value="spam">Spam</MenuItem>
+              <MenuItem value="inappropriate">Inappropriate</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="Description"
+            multiline
+            minRows={3}
+            fullWidth
+            value={reportDescription}
+            onChange={(e) => setReportDescription(e.target.value)}
+            inputProps={{ maxLength: 500 }}
+            sx={{ mb: 1 }}
+          />
+          {reportError && (
+            <Typography color="error" variant="body2">
+              {reportError}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReportOpen(false)} disabled={reportLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleReportSubmit}
+            disabled={
+              reportLoading ||
+              !reportCategory ||
+              !reportDescription.trim() ||
+              reportDescription.length > 500
+            }
+            variant="contained"
+            sx={{ bgcolor: "#000", color: "#fff" }}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
+export default DiscussionPage;

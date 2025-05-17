@@ -1,0 +1,154 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc; /* Consistent light background */
+  padding: 2rem;
+}
+
+.formCard {
+  background: white;
+  padding: 2.5rem 3rem; /* Adjusted padding */
+  border-radius: 1rem; /* Slightly smaller radius */
+  /* Softer, layered shadow */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9; /* Subtle border */
+  width: 100%;
+  max-width: 450px; /* Slightly narrower */
+}
+
+.title {
+  font-size: 2rem; /* Slightly smaller */
+  font-weight: 700;
+  color: #111827; /* Darker gray/off-black */
+  text-align: center;
+  margin-bottom: 0.5rem; /* Reduced space */
+}
+
+.subtitle {
+  color: #6b7280; /* Medium gray */
+  text-align: center;
+  margin-bottom: 2.5rem; /* Adjusted space */
+  font-size: 1rem; /* Standard size */
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Reduced gap */
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Reduced gap */
+}
+
+.inputGroup label {
+  font-size: 0.875rem; /* Smaller label */
+  font-weight: 500;
+  color: #374151; /* Slightly darker label color */
+}
+
+.inputGroup input {
+  padding: 0.75rem 1rem; /* Adjusted padding */
+  border: 1px solid #d1d5db; /* Standard gray border */
+  border-radius: 0.5rem; /* Consistent radius */
+  font-size: 1rem; /* Standard input text size */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #ffffff; /* White background */
+  color: #111827;
+}
+
+.inputGroup input::placeholder {
+  color: #9ca3af; /* Lighter placeholder */
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: #111827; /* Darker border on focus */
+  /* Subtle focus ring */
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.05);
+}
+
+.submitButton {
+  background: #111827; /* Darker gray/off-black */
+  color: white;
+  padding: 0.8rem 1.5rem; /* Adjusted padding */
+  border: none;
+  border-radius: 0.5rem; /* Consistent radius */
+  font-size: 1rem; /* Standard button text */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem; /* Reduced top margin */
+  text-align: center; /* Ensure text is centered */
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #374151; /* Slightly lighter on hover */
+  transform: translateY(-2px); /* Subtle lift */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Add shadow on hover */
+}
+
+.submitButton:disabled,
+.submitButton.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loginText {
+  text-align: center;
+  margin-top: 1.5rem; /* Reduced margin */
+  color: #4b5563; /* Slightly darker gray */
+  font-size: 0.9rem; /* Slightly smaller */
+}
+
+.loginLink {
+  color: #111827; /* Match button color */
+  font-weight: 600;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.25rem; /* Reduced space */
+  cursor: pointer;
+  transition: color 0.2s;
+  text-decoration: underline; /* Add underline for clarity */
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.loginLink:hover {
+  color: #374151; /* Match button hover */
+}
+
+.error {
+  background: #fef2f2; /* Lighter red background */
+  border: 1px solid #fecaca; /* Lighter red border */
+  color: #991b1b; /* Darker red text */
+  padding: 0.75rem 1rem; /* Adjusted padding */
+  border-radius: 0.5rem; /* Consistent radius */
+  margin-bottom: 1.5rem; /* Adjusted margin */
+  text-align: center;
+  font-size: 0.875rem; /* Smaller error text */
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .formCard {
+    padding: 2rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+}
