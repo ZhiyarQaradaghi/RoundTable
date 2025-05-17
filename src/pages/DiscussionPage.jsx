@@ -186,30 +186,64 @@ function DiscussionPage() {
 
   useEffect(() => {
     Object.entries(peers).forEach(([userId, stream]) => {
-      console.log("Setting up audio for peer:", userId);
+      console.log("Setting up audio for peer:", userId, "Stream:", {
+        active: stream.active,
+        tracks: stream.getTracks().map((t) => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+        })),
+      });
+
       if (!audioElements.current[userId]) {
-        const audio = new Audio();
+        const audio = document.createElement("audio");
+        audio.id = `audio-${userId}`;
+        document.body.appendChild(audio);
+
         audio.srcObject = stream;
         audio.autoplay = true;
+        audio.playsInline = true;
+        audio.volume = 1.0;
 
-        audio.onplay = () =>
-          console.log("Audio started playing for peer:", userId);
-        audio.onpause = () => console.log("Audio paused for peer:", userId);
-        audio.onerror = (e) =>
-          console.error("Audio error for peer:", userId, e);
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("Audio playing successfully for peer:", userId);
+              const audioTrack = stream.getAudioTracks()[0];
+              if (audioTrack) {
+                audioTrack.enabled = true;
+                console.log("Audio track enabled for peer:", userId);
+              }
+            })
+            .catch((err) => {
+              console.error("Error playing audio:", err);
+              // Try to recover by requesting user interaction
+              const retryPlay = () => {
+                audio.play().catch(console.error);
+                document.removeEventListener("click", retryPlay);
+              };
+              document.addEventListener("click", retryPlay);
+            });
+        }
 
         audioElements.current[userId] = audio;
-        console.log("Audio element created:", audio.srcObject?.active);
       }
     });
 
     return () => {
       Object.entries(audioElements.current).forEach(([userId, audio]) => {
-        console.log("Cleaning up audio for peer:", userId);
-        audio.srcObject = null;
+        console.log("Cleaning up audio element for:", userId);
+        if (audio.srcObject) {
+          audio.srcObject.getTracks().forEach((track) => {
+            track.stop();
+            console.log("Stopped track for:", userId);
+          });
+        }
         audio.remove();
+        delete audioElements.current[userId];
       });
-      audioElements.current = {};
     };
   }, [peers]);
 
