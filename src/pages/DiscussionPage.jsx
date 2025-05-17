@@ -370,33 +370,14 @@ function DiscussionPage() {
     const isSpeaking =
       speakingUsers.has(participant._id) ||
       (participant._id === user?._id && isLocalSpeaking);
-    const isFreeTalkType =
-      currentDiscussion?.type?.toLowerCase() === "free talk";
 
     return (
       <ListItem
         sx={{
           transition: "all 0.2s ease",
-          border: isSpeaking ? "2px solid #27ae60" : "none",
-          backgroundColor: isSpeaking
-            ? "rgba(39, 174, 96, 0.1)"
-            : "transparent",
           borderRadius: "8px",
           margin: "4px 0",
           position: "relative",
-          "&::before": isSpeaking
-            ? {
-                content: '""',
-                position: "absolute",
-                left: -2,
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: "4px",
-                height: "70%",
-                backgroundColor: "#27ae60",
-                borderRadius: "4px",
-              }
-            : {},
         }}
       >
         <ListItemAvatar>
@@ -410,7 +391,6 @@ function DiscussionPage() {
         </ListItemAvatar>
         <ListItemText
           primary={participant.username}
-          secondary={isSpeaking ? "Speaking..." : ""}
           primaryTypographyProps={{
             fontWeight: isSpeaking ? 600 : 400,
           }}
