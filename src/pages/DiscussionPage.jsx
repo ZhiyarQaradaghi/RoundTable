@@ -189,7 +189,6 @@ function DiscussionPage() {
       if (!audioElements.current[userId]) {
         const audio = new Audio();
         audio.id = `audio-${userId}`;
-
         audio.srcObject = stream;
         audio.autoplay = true;
         audio.playsInline = true;
@@ -198,27 +197,25 @@ function DiscussionPage() {
 
         const startAudio = async () => {
           try {
-            await audio.setSinkId("default");
+            if (audio.setSinkId && typeof audio.setSinkId === "function") {
+              await audio.setSinkId("default");
+            }
             await audio.play();
             const audioTrack = stream.getAudioTracks()[0];
             if (audioTrack) {
               audioTrack.enabled = true;
             }
           } catch (err) {
-            if (
-              err.name === "NotAllowedError" ||
-              err.name === "NotFoundError"
-            ) {
+            if (err.name === "NotAllowedError") {
               document.addEventListener(
                 "touchstart",
                 function playOnTouch() {
-                  audio.play();
+                  audio.play().catch(console.error);
                   document.removeEventListener("touchstart", playOnTouch);
                 },
                 { once: true }
               );
             }
-            console.error("Audio playback error:", err.name);
           }
         };
 
