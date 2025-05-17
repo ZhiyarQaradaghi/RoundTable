@@ -5,18 +5,16 @@ export const useVoiceChat = (socket, discussionId) => {
   const localStreamRef = useRef(null);
   const peerConnections = useRef({});
 
-  const iceServers = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" },
-      { urls: "stun:stun3.l.google.com:19302" },
-      { urls: "stun:stun4.l.google.com:19302" },
-    ],
-  };
-
   const createPeerConnection = (targetUserId) => {
-    const pc = new RTCPeerConnection(iceServers);
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ],
+      iceTransportPolicy: "all",
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
+    });
 
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
@@ -53,8 +51,7 @@ export const useVoiceChat = (socket, discussionId) => {
         targetUserId
       );
       if (event.track.kind === "audio") {
-        const remoteStream = new MediaStream();
-        remoteStream.addTrack(event.track);
+        const remoteStream = new MediaStream([event.track]);
         setPeers((prev) => ({
           ...prev,
           [targetUserId]: remoteStream,

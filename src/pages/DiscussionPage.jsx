@@ -192,34 +192,35 @@ function DiscussionPage() {
         audio.srcObject = stream;
         audio.autoplay = true;
         audio.playsInline = true;
+        audio.controls = true;
         audio.muted = false;
         audio.volume = 1.0;
 
         const startAudio = async () => {
           try {
-            if (audio.setSinkId && typeof audio.setSinkId === "function") {
-              await audio.setSinkId("default");
-            }
             await audio.play();
             const audioTrack = stream.getAudioTracks()[0];
             if (audioTrack) {
               audioTrack.enabled = true;
             }
           } catch (err) {
-            if (err.name === "NotAllowedError") {
-              document.addEventListener(
-                "touchstart",
-                function playOnTouch() {
-                  audio.play().catch(console.error);
-                  document.removeEventListener("touchstart", playOnTouch);
-                },
-                { once: true }
-              );
-            }
+            console.error("Audio playback error:", err.name);
+            document.addEventListener(
+              "touchstart",
+              function playOnTouch() {
+                audio
+                  .play()
+                  .then(() => console.log("Audio playing after touch"))
+                  .catch((e) => console.error("Play failed after touch:", e));
+                document.removeEventListener("touchstart", playOnTouch);
+              },
+              { once: true }
+            );
           }
         };
 
         startAudio();
+        document.body.appendChild(audio);
         audioElements.current[userId] = audio;
       }
     });
