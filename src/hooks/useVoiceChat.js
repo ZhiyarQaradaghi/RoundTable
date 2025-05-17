@@ -12,6 +12,18 @@ export const useVoiceChat = (socket, discussionId) => {
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        {
+          urls: "turn:roundtable.metered.live:80?transport=udp",
+          username: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
+          credential: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
+        },
+        {
+          urls: "turns:roundtable.metered.live:443?transport=tcp",
+          username: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
+          credential: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
+        },
       ],
       iceTransportPolicy: "all",
       bundlePolicy: "max-bundle",
@@ -19,19 +31,9 @@ export const useVoiceChat = (socket, discussionId) => {
     });
 
     if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        console.log(
-          "Adding audio track from localStreamRef:",
-          audioTrack.label,
-          audioTrack.enabled
-        );
-        pc.addTrack(audioTrack, localStreamRef.current);
-      } else {
-        console.warn("No audio track found in localStreamRef.current");
-      }
-    } else {
-      console.warn("localStreamRef.current is null in createPeerConnection");
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current);
+      });
     }
 
     pc.onicecandidate = (event) => {
@@ -45,38 +47,42 @@ export const useVoiceChat = (socket, discussionId) => {
     };
 
     pc.ontrack = (event) => {
-      console.log(
-        "Received remote track:",
-        event.track.kind,
-        event.track.readyState,
-        "for user:",
-        targetUserId
-      );
       if (event.track.kind === "audio") {
-        const remoteStream = new MediaStream([event.track]);
-        setPeers((prev) => ({
-          ...prev,
-          [targetUserId]: remoteStream,
-        }));
+        setPeers((prev) => {
+          const stream = prev[targetUserId] || new MediaStream();
+          if (!stream.getTracks().find((t) => t.id === event.track.id)) {
+            stream.addTrack(event.track);
+          }
+          return {
+            ...prev,
+            [targetUserId]: stream,
+          };
+        });
 
-        const audioContext = new AudioContext();
-        checkAudioLevel(audioContext, remoteStream, targetUserId);
+        if (
+          event.streams &&
+          event.streams[0] &&
+          event.streams[0].getAudioTracks().length > 0
+        ) {
+          checkAudioLevel(new AudioContext(), event.streams[0], targetUserId);
+        } else {
+          console.warn(
+            `No valid stream in ontrack event.streams[0] for ${targetUserId} to check audio level.`
+          );
+        }
       }
     };
 
     pc.oniceconnectionstatechange = () => {
       console.log(
-        `ICE connection state for ${targetUserId}:`,
-        pc.iceConnectionState
+        `ICE connection state for ${targetUserId}: ${pc.iceConnectionState}`
       );
       if (pc.iceConnectionState === "failed") {
-        console.log(`ICE failed for ${targetUserId}, restarting ICE`);
+        console.log(
+          `ICE failed for ${targetUserId}, attempting to restart ICE.`
+        );
         pc.restartIce();
       }
-    };
-
-    pc.onsignalingstatechange = () => {
-      console.log(`Signaling state for ${targetUserId}:`, pc.signalingState);
     };
 
     return pc;
@@ -155,7 +161,6 @@ export const useVoiceChat = (socket, discussionId) => {
   const stopVoiceChat = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
     }
     Object.values(peerConnections.current).forEach((pc) => pc.close());
     peerConnections.current = {};

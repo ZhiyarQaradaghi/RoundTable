@@ -209,6 +209,18 @@ function DiscussionPage() {
           } catch (err) {
             console.error("Audio playback error:", err.name);
             document.addEventListener(
+              "click",
+              function playOnClick() {
+                audio
+                  .play()
+                  .then(() => console.log("Audio playing after click"))
+                  .catch((e) => console.error("Play failed after click:", e));
+                document.removeEventListener("click", playOnClick);
+              },
+              { once: true }
+            );
+
+            document.addEventListener(
               "touchstart",
               function playOnTouch() {
                 audio
