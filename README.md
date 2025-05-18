@@ -1,4 +1,15 @@
-To run the project, run the following command:
+This is the frontend for the RoundTable project.
+
+It has these features:
+
+- Voice chat
+- Text chat
+- Discussion board
+- Reporting
+- User Authentication
+
+
+  To run the project, run the following command:
 
 ```bash
 npm run dev
