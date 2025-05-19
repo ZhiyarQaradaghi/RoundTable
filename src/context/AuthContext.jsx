@@ -109,23 +109,31 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
+      console.log("Updating user with:", updateData);
+      const filteredData = Object.fromEntries(
+        Object.entries(updateData).filter(
+          ([_, value]) => value !== undefined && value !== ""
+        )
+      );
+
       const response = await fetch(getApiUrl("/api/users/profile"), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(filteredData),
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(
-          data.error || data.message || "Failed to update profile"
-        );
+        throw new Error(data.error || "Failed to update profile");
       }
 
       setUser(data);
       return data;
     } catch (err) {
+      console.error("Update user error:", err);
       setError(err.message);
       throw err;
     } finally {
