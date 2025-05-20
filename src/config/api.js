@@ -1,4 +1,5 @@
-export const getApiUrl = (path) => {
-  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-  return `${baseUrl}${path}`;
-};
+export const API_URL = import.meta.env.PROD
+  ? "https://roundtable-backend.onrender.com"
+  : "http://localhost:3000";
+
+export const getApiUrl = (endpoint) => `${API_URL}${endpoint}`;
