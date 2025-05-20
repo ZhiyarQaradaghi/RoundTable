@@ -6,17 +6,32 @@ export const useVoiceChat = (socket, discussionId) => {
   const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
   const localStreamRef = useRef(null);
   const peerConnections = useRef({});
+  const [iceServers, setIceServers] = useState(null);
+  const pendingIceCandidates = useRef({});
+
+  useEffect(() => {
+    const fetchIceServers = async () => {
+      try {
+        const response = await fetch(
+          "https://roundtable.metered.live/api/v1/turn/credentials?apiKey=5463bf6ecbbb11d1baaf23d2c6280f36e648"
+        );
+        const servers = await response.json();
+        setIceServers(servers);
+      } catch (error) {
+        console.error("Error fetching ICE servers:", error);
+        setIceServers([
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ]);
+      }
+    };
+    fetchIceServers();
+  }, []);
 
   const createPeerConnection = (targetUserId) => {
+    if (!iceServers) return null;
     const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-          urls: "turn:relay1.expressturn.com:3480",
-          username: "174752027665749291",
-          credential: "jE84ZfZyTm5SXqf90FjBhtNoo7s=",
-        },
-      ],
+      iceServers: iceServers,
       iceTransportPolicy: "all",
       bundlePolicy: "max-bundle",
       rtcpMuxPolicy: "require",
@@ -77,6 +92,23 @@ export const useVoiceChat = (socket, discussionId) => {
       }
     };
 
+    // Add any pending ICE candidates that arrived before the PC was created
+    if (pendingIceCandidates.current[targetUserId]) {
+      const candidates = pendingIceCandidates.current[targetUserId];
+      candidates.forEach(async (candidate) => {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log(`Added pending ICE candidate for ${targetUserId}`);
+        } catch (err) {
+          console.error(
+            `Error adding pending ICE candidate for ${targetUserId}:`,
+            err
+          );
+        }
+      });
+      delete pendingIceCandidates.current[targetUserId];
+    }
+
     return pc;
   };
 
@@ -94,7 +126,11 @@ export const useVoiceChat = (socket, discussionId) => {
       const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
       if (audioLevel > 10) {
-        setSpeakingUsers((prev) => new Set(prev).add(userId));
+        setSpeakingUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(userId);
+          return newSet;
+        });
         if (isLocal) setIsLocalSpeaking(true);
         setTimeout(() => {
           setSpeakingUsers((prev) => {
@@ -111,6 +147,11 @@ export const useVoiceChat = (socket, discussionId) => {
   };
 
   const startVoiceChat = async () => {
+    if (!iceServers) {
+      console.log("Waiting for ICE servers...");
+      return;
+    }
+
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -123,26 +164,7 @@ export const useVoiceChat = (socket, discussionId) => {
       localStreamRef.current = mediaStream;
 
       const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(mediaStream);
-      const analyzer = audioContext.createAnalyser();
-      analyzer.fftSize = 256;
-      source.connect(analyzer);
-
-      const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-      const checkAudioLevel = () => {
-        if (!localStreamRef.current) return;
-        analyzer.getByteFrequencyData(dataArray);
-        const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length;
-
-        if (audioLevel > 10) {
-          setIsLocalSpeaking(true);
-          console.log("Local audio level:", audioLevel.toFixed(2));
-        } else {
-          setIsLocalSpeaking(false);
-        }
-        requestAnimationFrame(checkAudioLevel);
-      };
-      checkAudioLevel();
+      checkAudioLevel(audioContext, mediaStream, socket.id, true);
 
       socket.emit("ready-to-connect", { discussionId });
     } catch (error) {
@@ -153,20 +175,23 @@ export const useVoiceChat = (socket, discussionId) => {
   const stopVoiceChat = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
     }
     Object.values(peerConnections.current).forEach((pc) => pc.close());
     peerConnections.current = {};
     setPeers({});
+    setIsLocalSpeaking(false);
     console.log("Voice chat stopped and cleaned up.");
   };
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !iceServers) return;
 
     const handleUserReady = async ({ userId }) => {
       if (socket.id === userId) return;
       try {
         const pc = createPeerConnection(userId);
+        if (!pc) return;
         peerConnections.current[userId] = pc;
         const offer = await pc.createOffer({
           offerToReceiveAudio: true,
@@ -186,6 +211,7 @@ export const useVoiceChat = (socket, discussionId) => {
       console.log(`Received voice offer from ${userId}.`);
       try {
         const pc = createPeerConnection(userId);
+        if (!pc) return;
         peerConnections.current[userId] = pc;
 
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -220,14 +246,16 @@ export const useVoiceChat = (socket, discussionId) => {
     const handleIceCandidate = async ({ candidate, userId }) => {
       console.log(`Received ICE candidate from ${userId}.`);
       try {
-        if (peerConnections.current[userId] && candidate) {
+        if (peerConnections.current[userId]) {
           await peerConnections.current[userId].addIceCandidate(
             new RTCIceCandidate(candidate)
           );
         } else {
-          console.warn(
-            `No peer connection or candidate for ${userId} to add ICE candidate.`
-          );
+          if (!pendingIceCandidates.current[userId]) {
+            pendingIceCandidates.current[userId] = [];
+          }
+          pendingIceCandidates.current[userId].push(candidate);
+          console.log(`Stored pending ICE candidate for ${userId}`);
         }
       } catch (error) {
         console.error(`Error adding ICE candidate from ${userId}:`, error);
@@ -247,7 +275,7 @@ export const useVoiceChat = (socket, discussionId) => {
       socket.off("ice-candidate", handleIceCandidate);
       stopVoiceChat();
     };
-  }, [socket, discussionId]);
+  }, [socket, discussionId, iceServers]);
 
   return {
     startVoiceChat,
