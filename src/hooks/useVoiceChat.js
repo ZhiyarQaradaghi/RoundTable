@@ -11,9 +11,11 @@ export const useVoiceChat = (socket, discussionId) => {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun3.l.google.com:19302" },
+        {
+          urls: "turn:relay1.expressturn.com:3480",
+          username: "174752027665749291",
+          credential: "jE84ZfZyTm5SXqf90FjBhtNoo7s=",
+        },
       ],
       iceTransportPolicy: "all",
       bundlePolicy: "max-bundle",
