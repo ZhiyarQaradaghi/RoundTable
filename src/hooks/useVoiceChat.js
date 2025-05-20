@@ -14,16 +14,6 @@ export const useVoiceChat = (socket, discussionId) => {
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:stun3.l.google.com:19302" },
-        {
-          urls: "turn:roundtable.metered.live:80?transport=udp",
-          username: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
-          credential: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
-        },
-        {
-          urls: "turns:roundtable.metered.live:443?transport=tcp",
-          username: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
-          credential: "sd0aRXQn9HjLKH-opB-hYhclQmJoZWHudh8X0SRMyFKnI-Gr",
-        },
       ],
       iceTransportPolicy: "all",
       bundlePolicy: "max-bundle",
@@ -88,7 +78,7 @@ export const useVoiceChat = (socket, discussionId) => {
     return pc;
   };
 
-  const checkAudioLevel = (audioContext, stream, userId) => {
+  const checkAudioLevel = (audioContext, stream, userId, isLocal = false) => {
     const analyzer = audioContext.createAnalyser();
     analyzer.fftSize = 1024;
     analyzer.smoothingTimeConstant = 0.3;
@@ -103,14 +93,14 @@ export const useVoiceChat = (socket, discussionId) => {
 
       if (audioLevel > 10) {
         setSpeakingUsers((prev) => new Set(prev).add(userId));
-        setIsLocalSpeaking(true);
+        if (isLocal) setIsLocalSpeaking(true);
         setTimeout(() => {
           setSpeakingUsers((prev) => {
             const newSet = new Set(prev);
             newSet.delete(userId);
             return newSet;
           });
-          setIsLocalSpeaking(false);
+          if (isLocal) setIsLocalSpeaking(false);
         }, 300);
       }
       requestAnimationFrame(checkLevel);
@@ -172,16 +162,14 @@ export const useVoiceChat = (socket, discussionId) => {
     if (!socket) return;
 
     const handleUserReady = async ({ userId }) => {
-      console.log(`User ${userId} is ready. Creating offer.`);
+      if (socket.id === userId) return;
       try {
         const pc = createPeerConnection(userId);
         peerConnections.current[userId] = pc;
-
         const offer = await pc.createOffer({
           offerToReceiveAudio: true,
         });
         await pc.setLocalDescription(offer);
-
         socket.emit("voice-offer", {
           offer,
           targetUserId: userId,
